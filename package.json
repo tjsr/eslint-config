@@ -1,0 +1,31 @@
+{
+  "name": "@tjsr/eslint-config",
+  "version": "0.0.1",
+  "description": "ESLint ruleset for shared projects.",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tjsr/eslint-config.git"
+  },
+  "keywords": [
+    "eslint",
+    "typescript",
+    "git",
+    "lint"
+  ],
+  "author": "Tim Rowe <tim@tjsr.id.au>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tjsr/eslint-config/issues"
+  },
+  "homepage": "https://github.com/tjsr/eslint-config#readme",
+  "dependencies": {
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "typescript-eslint": "^7.7.1"
+  }
+}
