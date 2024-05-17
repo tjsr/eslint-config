@@ -3,13 +3,10 @@ import google from 'eslint-config-google';
 import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config( {
-  files: ["**/*.ts"],
-  ignores: ["dist/**"],
-  extends: [
-    eslint.configs.recommended,
-    ...tseslint.configs.recommended,
-  ],
+export default tseslint.config(
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+{
   rules: {
     ...google.rules,
     ...prettier.rules,
@@ -44,8 +41,10 @@ export default tseslint.config( {
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/ban-types": "off",
+    // Off becuase it's already covered by no-unused-vars
+    "@typescript-eslint/no-unused-vars": "off",
     // "react-hooks/rules-of-hooks": "error",
     // "react-hooks/exhaustive-deps": "warn"
   },
- });
+});
  
