@@ -28,7 +28,7 @@ export default tseslint.config(
       "error", {
         "arrays": "always-multiline",
         "objects": "always-multiline",
-        "imports": "always-multiline",
+        "imports": "only-multiline",
         "exports": "never",
         "functions": "never"
     }],
