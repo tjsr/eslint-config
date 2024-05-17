@@ -1,12 +1,16 @@
 import eslint from '@eslint/js';
 import google from 'eslint-config-google';
 import prettier from 'eslint-config-prettier';
+import stylisticJs from '@stylistic/eslint-plugin-js'
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
 {
+  plugins: {
+    '@stylistic/js': stylisticJs
+  },
   rules: {
     ...google.rules,
     ...prettier.rules,
@@ -18,7 +22,16 @@ export default tseslint.config(
     "requireConfigFile": "off",
     "require-jsdoc": "off",
     // "quotes": ["error", "single"],
-    "comma-dangle": ["error", { "functions": "never", "arrays": "always-multiline", "objects": "always-multiline" }],
+    // comma-dangle deprecated in favor of @stylistic/esline-plugin-us
+    "comma-dangle": "off",
+    "@stylistic/js/comma-dangle": [
+      "error", {
+        "arrays": "always-multiline",
+        "objects": "always-multiline",
+        "imports": "always-multiline",
+        "exports": "never",
+        "functions": "never"
+    }],
     // "space-before-function-paren" was causing all kinds fo headaches because prettier won't honour it.
     "space-before-function-paren": "off",
     "operator-linebreak": ["error"],
@@ -42,7 +55,14 @@ export default tseslint.config(
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/ban-types": "off",
     // Off becuase it's already covered by no-unused-vars
-    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
     // "react-hooks/rules-of-hooks": "error",
     // "react-hooks/exhaustive-deps": "warn"
   },
