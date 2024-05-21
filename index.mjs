@@ -54,6 +54,13 @@ export default tseslint.config(
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/ban-types": "off",
+    "no-unused-vars": [
+      "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_" 
+        }
+    ],
     // Off becuase it's already covered by no-unused-vars
     "@typescript-eslint/no-unused-vars": [
       "error",
