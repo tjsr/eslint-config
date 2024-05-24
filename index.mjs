@@ -1,4 +1,5 @@
 import eslint from '@eslint/js';
+import globals from "globals";
 import google from 'eslint-config-google';
 import prettier from 'eslint-config-prettier';
 import stylisticJs from '@stylistic/eslint-plugin-js'
@@ -8,8 +9,11 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
 {
-  env: {
-    node: true
+  languageOptions: {
+    globals: {
+      ...globals.NodeJS,
+      // replace with env: node in 9.x
+    }
   },
   plugins: {
     '@stylistic/js': stylisticJs
