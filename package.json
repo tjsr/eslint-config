@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/tjsr/eslint-config#readme",
   "dependencies": {
-    "@eslint/js": "^8.57.0 && <9",
+    "@eslint/js": "^8.57.0",
     "@stylistic/eslint-plugin-js": "^2.3.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^9.1.0",
@@ -32,8 +32,8 @@
     "typescript-eslint": "^7.17.0"
   },
   "peerDependencies": {
-    "@eslint/js": "^8.57.0 && <9",
-    "eslint": "^8.57.0 && <9",
+    "@eslint/js": "^8.57.0",
+    "eslint": "^8.57.0",
     "prettier": "^3.3.3"
   },
   "overrides": {
