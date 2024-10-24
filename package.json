@@ -5,7 +5,9 @@
   "type": "module",
   "main": "index.mjs",
   "scripts": {
-    "clean": "npx rimraf node_modules"
+    "clean": "npx rimraf node_modules",
+    "lint": "eslint --config ./index.mjs",
+    "test": "npm run lint"
   },
   "repository": {
     "type": "git",
@@ -42,5 +44,8 @@
     "glob": "^10.4.1",
     "flat-cache": "^5.0.0",
     "file-entry-cache": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint-plugin-jsdoc": "^50.4.3"
   }
 }
