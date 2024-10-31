@@ -6,13 +6,12 @@ import stylisticJs from '@stylistic/eslint-plugin-js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  eslint.configs.recommended,
+  ...eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
     languageOptions: {
       globals: {
         ...globals.NodeJS,
-        // replace with env: node in 9.x
       },
     },
     plugins: {
