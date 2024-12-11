@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+    assignees:
+    - 'tjsr'
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ["version-update:semver-major"]
+    groups:
+      linter:
+        applies-to: version-updates
+        patterns:
+        - "@typescript-eslint/*"
+        - "eslint-*"
+        - "eslint"
+        - "@tjsr/eslint-config"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every week
+      interval: "weekly"
+    assignees:
+      - 'tjsr'
