@@ -10,13 +10,18 @@ updates:
       - dependency-name: '@types/node'
         update-types: ["version-update:semver-major"]
     groups:
-      linter:
+      typescript:
         applies-to: version-updates
         patterns:
+        - "typescript"
         - "@typescript-eslint/*"
+        - "typescript-eslint"
+      eslint:
+        applies-to: version-updates
+        patterns:
+        - "@stytistic/eslint-plugin-js"
         - "eslint-*"
         - "eslint"
-        - "@tjsr/eslint-config"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
