@@ -55,14 +55,7 @@ export default tseslint.config(
       "new-cap": "error",
       "no-explicit-any": "off",
       "no-extend-native": "warn",
-      // Off becuase it's already covered by no-unused-vars
-      "no-unused-vars": [
-        "warn",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_" ,
-        },
-      ],
+      "no-unused-vars": "off", // Off - use @ts-es/nuv, see https://stackoverflow.com/a/61555310
       "object-curly-spacing": ["error", "always"],
       "operator-linebreak": ["error"],
       "require-jsdoc": "off",
@@ -82,5 +75,11 @@ export default tseslint.config(
       // "react-hooks/rules-of-hooks": "error",
       // "react-hooks/exhaustive-deps": "warn"
     },
+  },
+  {
+    "files": ["**/*.test.ts", "**/*.spec.test.ts", "**'*.spec.ts"],
+    rules: {
+      "max-len": "off",
+    }
   });
  
