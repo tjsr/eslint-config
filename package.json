@@ -46,6 +46,6 @@
     "file-entry-cache": "^9.0.0"
   },
   "devDependencies": {
-    "eslint-plugin-jsdoc": "^50.6.3"
+    "eslint-plugin-jsdoc": "^50.6.6"
   }
 }
