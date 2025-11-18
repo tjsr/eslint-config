@@ -2,7 +2,7 @@ import eslint from '@eslint/js';
 import globals from "globals";
 import google from 'eslint-config-google';
 import prettier from 'eslint-config-prettier';
-import stylisticJs from '@stylistic/eslint-plugin-js';
+import stylistic from '@stylistic/eslint-plugin';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -16,7 +16,7 @@ export default tseslint.config(
       },
     },
     plugins: {
-      '@stylistic/js': stylisticJs,
+      '@stylistic/js': stylistic,
     },
     rules: {
       ...google.rules,
@@ -80,6 +80,7 @@ export default tseslint.config(
     "files": ["**/*.test.ts", "**/*.spec.test.ts", "**'*.spec.ts"],
     rules: {
       "max-len": "off",
-    }
-  });
+    },
+  }
+);
  
