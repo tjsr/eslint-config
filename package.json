@@ -31,6 +31,7 @@
     "eslint": "^9.39.2",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "typescript-eslint": "^8.59.4"
   },
   "peerDependencies": {
@@ -45,6 +46,7 @@
     "file-entry-cache": "^9.0.0"
   },
   "devDependencies": {
-    "eslint-plugin-jsdoc": "^62.0.0"
+    "eslint-plugin-jsdoc": "^62.0.0",
+    "prettier": "^3.9.9"
   }
 }
