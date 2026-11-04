@@ -1,9 +1,9 @@
 import eslint from '@eslint/js';
-import globals from 'globals';
-import google from 'eslint-config-google';
-import importPlugin from 'eslint-plugin-import';
-import prettier from 'eslint-config-prettier';
 import stylistic from '@stylistic/eslint-plugin';
+import google from 'eslint-config-google';
+import prettier from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import-x';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
