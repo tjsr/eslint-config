@@ -1,0 +1,27 @@
+name: TJSR Dependabot automation
+description: Rebase trusted Dependabot branches and approve/rebase-merge eligible updates after CI.
+inputs:
+  scope:
+    description: All dependency updates (all) or only the shared ESLint config and lint dependencies (linter).
+    required: true
+  workflows:
+    description: JSON array of required CI workflow paths.
+    required: true
+  token:
+    description: Repository token with Actions/checks read and contents/pull-requests/issues write access.
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v9
+      env:
+        AUTOMATION_ACTION_PATH: ${{ github.action_path }}
+        AUTOMATION_SCOPE: ${{ inputs.scope }}
+        AUTOMATION_WORKFLOWS: ${{ inputs.workflows }}
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          const { pathToFileURL } = await import('node:url');
+          const { run } = await import(pathToFileURL(`${process.env.AUTOMATION_ACTION_PATH}/automation.mjs`));
+          await run({ github, context, core, scope: process.env.AUTOMATION_SCOPE,
+            workflows: JSON.parse(process.env.AUTOMATION_WORKFLOWS) });

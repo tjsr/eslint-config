@@ -1,0 +1,40 @@
+name: Dependabot automation
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Test shared ESLint configuration","Test Dependabot automation"]
+    types: [completed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-automation
+  cancel-in-progress: false
+
+jobs:
+  dependencies:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Only load the trusted workflow revision; never check out a dependency PR here.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/dependabot
+        with:
+          scope: all
+          workflows: '[".github/workflows/test.yml",".github/workflows/dependabot-policy-test.yml"]'
+          # An existing automation token also lets merges trigger downstream push workflows.
+          token: ${{ secrets.TJSR_AUTOMATION_TOKEN || github.token }}
