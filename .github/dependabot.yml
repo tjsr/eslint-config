@@ -1,6 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: 'npm'
+    rebase-strategy: auto
     directory: '/'
     schedule:
       interval: 'daily'
@@ -19,13 +20,16 @@ updates:
       eslint:
         applies-to: version-updates
         patterns:
-        - "@stytistic/eslint-plugin-js"
+        - "@stylistic/*"
+        - "@eslint/*"
         - "eslint-*"
         - "eslint"
   - package-ecosystem: "github-actions"
+    rebase-strategy: auto
     directory: "/"
     schedule:
       # Check for updates to GitHub Actions every week
       interval: "weekly"
     assignees:
       - 'tjsr'
+
