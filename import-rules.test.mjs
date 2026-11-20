@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import process from 'node:process';
 import test from 'node:test';
 
 import { ESLint } from 'eslint';
 
 import config from './index.mjs';
+
+const eslintJsPackage = JSON.parse(await readFile('./node_modules/@eslint/js/package.json'));
 
 const eslint = new ESLint({ overrideConfig: config, overrideConfigFile: true });
 
@@ -13,6 +17,12 @@ async function lint(source) {
   assert.equal(result.fatalErrorCount, 0);
   return result;
 }
+
+test('uses the @eslint/js version selected by the compatibility matrix', () => {
+  if (process.env.ESLINT_JS_VERSION) {
+    assert.equal(eslintJsPackage.version, process.env.ESLINT_JS_VERSION);
+  }
+});
 
 test('accepts correctly grouped and ordered imports on ESLint 10', async () => {
   const result = await lint("import path from 'node:path';\n\nexport const separator = path.sep;\n");
