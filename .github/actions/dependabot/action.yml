@@ -10,6 +10,9 @@ inputs:
   token:
     description: Repository token with Actions/checks read and contents/pull-requests/issues write access.
     default: ${{ github.token }}
+  rebase-token:
+    description: Optional user-authenticated token for rebase requests only. Otherwise the action validates the main token.
+    required: false
 runs:
   using: composite
   steps:
@@ -18,10 +21,12 @@ runs:
         AUTOMATION_ACTION_PATH: ${{ github.action_path }}
         AUTOMATION_SCOPE: ${{ inputs.scope }}
         AUTOMATION_WORKFLOWS: ${{ inputs.workflows }}
+        AUTOMATION_REBASE_TOKEN: ${{ inputs.rebase-token }}
       with:
         github-token: ${{ inputs.token }}
         script: |
           const { pathToFileURL } = await import('node:url');
           const { run } = await import(pathToFileURL(`${process.env.AUTOMATION_ACTION_PATH}/automation.mjs`));
-          await run({ github, context, core, scope: process.env.AUTOMATION_SCOPE,
+          const rebaseGithub = process.env.AUTOMATION_REBASE_TOKEN ? getOctokit(process.env.AUTOMATION_REBASE_TOKEN) : github;
+          await run({ github, rebaseGithub, context, core, scope: process.env.AUTOMATION_SCOPE,
             workflows: JSON.parse(process.env.AUTOMATION_WORKFLOWS) });
