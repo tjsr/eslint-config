@@ -23,7 +23,6 @@ updates:
           - "typescript-eslint"
           - "prettier"
           - "prettier-plugin-*"
-          - "@trivago/prettier-plugin-sort-imports"
       development:
         applies-to: version-updates
         dependency-type: development
