@@ -45,3 +45,21 @@ Then, add the following run target to `package.json`:
 // ...
 }
 ```
+
+## Shared Prettier
+
+Projects that already use this package can use the same formatter without
+listing Prettier or its plugins separately. For standard formatting, create
+`prettier.config.mjs`:
+
+```js
+export { default } from '@tjsr/eslint-config/prettier.mjs';
+```
+
+Where alphabetical sorting of TypeScript members is already wanted, use
+`@tjsr/eslint-config/prettier-sort-members.mjs` instead. This sorts members,
+not imports; the standard configuration leaves import ordering to ESLint.
+
+In npm scripts, use `tjsr-prettier` to run the version supplied by this
+package (for example, `tjsr-prettier --check src`). The same package owns the
+member sorter, so consumer lockfiles pick it up with the ESLint config.
