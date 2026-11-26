@@ -11,19 +11,24 @@ updates:
       - dependency-name: '@types/node'
         update-types: ["version-update:semver-major"]
     groups:
-      typescript:
-        applies-to: version-updates
-        patterns:
-        - "typescript"
-        - "@typescript-eslint/*"
-        - "typescript-eslint"
       eslint:
         applies-to: version-updates
         patterns:
-        - "@stylistic/*"
-        - "@eslint/*"
-        - "eslint-*"
-        - "eslint"
+          - "@stylistic/*"
+          - "@eslint/*"
+          - "eslint-*"
+          - "eslint"
+          - "globals"
+          - "@typescript-eslint/*"
+          - "typescript-eslint"
+          - "prettier"
+          - "prettier-plugin-*"
+          - "@trivago/prettier-plugin-sort-imports"
+      development:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     rebase-strategy: auto
     directory: "/"
