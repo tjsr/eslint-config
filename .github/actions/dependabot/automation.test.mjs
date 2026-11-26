@@ -72,16 +72,16 @@ const fixture = (overrides = {}) => {
     user: { login: 'dependabot[bot]' },
   };
   const state = {
+    actor: { login: 'maintainer', type: 'User' },
     base: 'base',
     behind: false,
-    actor: { login: 'maintainer', type: 'User' },
-    permission: 'write',
     checks: [],
     comments: [],
     commits: [{ author: { login: 'dependabot[bot]' }, commit: { verification: { verified: true } } }],
     files: [{ filename: 'package-lock.json', status: 'modified' }],
     headLock: lock('new'),
     jobs: [{ conclusion: 'success', status: 'completed' }],
+    permission: 'write',
     prs: [pr],
     reviews: [],
     runs: [
@@ -110,12 +110,6 @@ const fixture = (overrides = {}) => {
         effects.push(['rebase', args]);
       },
       listComments: async () => state.comments,
-    },
-    users: {
-      getAuthenticated: async () => {
-        if (state.actorError) throw state.actorError;
-        return data(state.actor);
-      },
     },
     pulls: {
       createReview: async (args) => {
@@ -151,6 +145,12 @@ const fixture = (overrides = {}) => {
           ).toString('base64'),
           encoding: 'base64',
         }),
+    },
+    users: {
+      getAuthenticated: async () => {
+        if (state.actorError) throw state.actorError;
+        return data(state.actor);
+      },
     },
   };
   return {
@@ -207,12 +207,12 @@ test('keeps stale PRs blocked without posting through an installation token or a
 });
 
 test('uses an optional rebase credential only for identity, push access and the rebase comment', async () => {
-  const f = fixture({ behind: true, actorError: { status: 403 } });
+  const f = fixture({ actorError: { status: 403 }, behind: true });
   const calls = [];
   await f.execute('linter', undefined, {
     rest: {
-      users: {
-        getAuthenticated: async () => ({ data: { login: 'rebaser', type: 'User' } }),
+      issues: {
+        createComment: async (args) => calls.push(args),
       },
       repos: {
         getCollaboratorPermissionLevel: async (args) => {
@@ -220,8 +220,8 @@ test('uses an optional rebase credential only for identity, push access and the 
           return { data: { permission: 'write' } };
         },
       },
-      issues: {
-        createComment: async (args) => calls.push(args),
+      users: {
+        getAuthenticated: async () => ({ data: { login: 'rebaser', type: 'User' } }),
       },
     },
   });
@@ -231,7 +231,10 @@ test('uses an optional rebase credential only for identity, push access and the 
 });
 
 test('does not retry a rejected command for the same actor and head after main advances', async () => {
-  const command = (login) => ({ body: '@dependabot rebase\n\n<!-- dependabot-rebase:old:tested-head -->', user: { login } });
+  const command = (login) => ({
+    body: '@dependabot rebase\n\n<!-- dependabot-rebase:old:tested-head -->',
+    user: { login },
+  });
   const refusal = {
     body: 'Sorry, only users with push access can use that command.',
     user: { login: 'dependabot[bot]' },

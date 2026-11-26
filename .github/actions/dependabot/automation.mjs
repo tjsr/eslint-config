@@ -118,7 +118,7 @@ const run = async ({ github, rebaseGithub = github, context, core, scope, workfl
     const actor = await rebaseActor;
     const manual = 'Ask a maintainer with push access to request the rebase.';
     if (!actor) {
-      core.warning(`PR #${pr.number}: behind ${baseSha}; current token has no verified user with push access. ${manual}`);
+      core.warning(`PR #${pr.number}: no verified user with push access for this token. ${manual}`);
       return true;
     }
 
