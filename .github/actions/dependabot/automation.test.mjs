@@ -48,10 +48,21 @@ test('accepts declared lint ranges and rejects non-lint declarations', () => {
   );
 });
 
+test('recognises only the three approved Prettier tools in the lint scope', () => {
+  const changed = (name) => ({ ...manifest, devDependencies: { ...manifest.devDependencies, [name]: '^1.0.0' } });
+  for (const name of ['prettier', 'prettier-plugin-sort-members', '@trivago/prettier-plugin-sort-imports']) {
+    assert.equal(lintOnly(manifest, changed(name), lock(), lock('new')), true);
+  }
+  for (const name of ['prettier-plugin-unrelated', '@trivago/unrelated', 'vitest']) {
+    assert.equal(lintOnly(manifest, changed(name), lock(), lock('new')), false);
+  }
+});
+
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const fixture = (overrides = {}) => {
   const effects = [];
+  const warnings = [];
   const pr = {
     base: { ref: 'main' },
     draft: false,
@@ -61,6 +72,7 @@ const fixture = (overrides = {}) => {
     user: { login: 'dependabot[bot]' },
   };
   const state = {
+    actor: { login: 'maintainer', type: 'User' },
     base: 'base',
     behind: false,
     checks: [],
@@ -69,6 +81,7 @@ const fixture = (overrides = {}) => {
     files: [{ filename: 'package-lock.json', status: 'modified' }],
     headLock: lock('new'),
     jobs: [{ conclusion: 'success', status: 'completed' }],
+    permission: 'write',
     prs: [pr],
     reviews: [],
     runs: [
@@ -91,7 +104,13 @@ const fixture = (overrides = {}) => {
   const api = {
     actions: { listJobsForWorkflowRun: async () => state.jobs, listWorkflowRunsForRepo: async () => state.runs },
     checks: { listForRef: async () => state.checks },
-    issues: { createComment: async (args) => effects.push(['rebase', args]), listComments: async () => state.comments },
+    issues: {
+      createComment: async (args) => {
+        if (state.commentError) throw state.commentError;
+        effects.push(['rebase', args]);
+      },
+      listComments: async () => state.comments,
+    },
     pulls: {
       createReview: async (args) => {
         effects.push(['approve', args]);
@@ -117,6 +136,7 @@ const fixture = (overrides = {}) => {
       compareCommitsWithBasehead: async () => data({ behind_by: state.behind ? 1 : 0 }),
       get: async () => data({ default_branch: 'main' }),
       getBranch: async () => data({ commit: { sha: state.base } }),
+      getCollaboratorPermissionLevel: async () => data({ permission: state.permission }),
       getCombinedStatusForRef: async () => data(state.status),
       getContent: async ({ path, ref }) =>
         data({
@@ -126,18 +146,26 @@ const fixture = (overrides = {}) => {
           encoding: 'base64',
         }),
     },
+    users: {
+      getAuthenticated: async () => {
+        if (state.actorError) throw state.actorError;
+        return data(state.actor);
+      },
+    },
   };
   return {
     effects,
-    execute: (scope = 'linter', workflows = ['.github/workflows/build.yml']) =>
+    execute: (scope = 'linter', workflows = ['.github/workflows/build.yml'], rebaseGithub) =>
       run({
         context: { repo: { owner: 'tjsr', repo: 'consumer' } },
-        core: { info() {} },
+        core: { info() {}, warning: (message) => warnings.push(message) },
         github: { paginate: (method, args) => method(args), rest: api },
+        rebaseGithub,
         scope,
         workflows,
       }),
     state,
+    warnings,
   };
 };
 
@@ -160,11 +188,95 @@ test('rebases stale branches without approving or merging, and deduplicates comm
     ['rebase']
   );
   assert.match(f.effects[0][1].body, /^@dependabot rebase\n/);
-  f.state.comments = [{ body: f.effects[0][1].body }];
+  f.state.comments = [{ body: f.effects[0][1].body, user: { login: 'maintainer' } }];
   f.effects.length = 0;
   await f.execute();
   assert.deepEqual(f.effects, []);
 });
+test('keeps stale PRs blocked without posting through an installation token or a read-only user', async () => {
+  for (const overrides of [
+    { actorError: { status: 403 } },
+    { actor: { login: 'github-actions[bot]', type: 'Bot' } },
+    { permission: 'read' },
+  ]) {
+    const f = fixture({ ...overrides, behind: true });
+    await f.execute();
+    assert.deepEqual(f.effects, []);
+    assert.match(f.warnings[0], /no verified user with push access/);
+  }
+});
+
+test('uses an optional rebase credential only for identity, push access and the rebase comment', async () => {
+  const f = fixture({ actorError: { status: 403 }, behind: true });
+  const calls = [];
+  await f.execute('linter', undefined, {
+    rest: {
+      issues: {
+        createComment: async (args) => calls.push(args),
+      },
+      repos: {
+        getCollaboratorPermissionLevel: async (args) => {
+          calls.push(args);
+          return { data: { permission: 'write' } };
+        },
+      },
+      users: {
+        getAuthenticated: async () => ({ data: { login: 'rebaser', type: 'User' } }),
+      },
+    },
+  });
+  assert.deepEqual(f.effects, []);
+  assert.equal(calls[0].username, 'rebaser');
+  assert.match(calls[1].body, /^@dependabot rebase/);
+});
+
+test('does not retry a rejected command for the same actor and head after main advances', async () => {
+  const command = (login) => ({
+    body: '@dependabot rebase\n\n<!-- dependabot-rebase:old:tested-head -->',
+    user: { login },
+  });
+  const refusal = {
+    body: 'Sorry, only users with push access can use that command.',
+    user: { login: 'dependabot[bot]' },
+  };
+  const denied = fixture({ behind: true, comments: [command('maintainer'), refusal] });
+  await denied.execute();
+  assert.deepEqual(denied.effects, []);
+  assert.match(denied.warnings[0], /denied this actor's rebase/);
+
+  for (const comments of [
+    [command('github-actions[bot]'), refusal],
+    [command('maintainer'), { ...refusal, user: { login: 'other' } }],
+    [command('maintainer'), { body: '@dependabot rebase', user: { login: 'other' } }, refusal],
+    [{ ...command('maintainer'), body: '@dependabot rebase' }, refusal],
+  ]) {
+    const f = fixture({ behind: true, comments });
+    await f.execute();
+    assert.deepEqual(f.effects.map(([kind]) => kind), ['rebase']);
+  }
+});
+
+test('handles comment authorization failure and checks for concurrent head/base changes', async () => {
+  const denied = fixture({ behind: true, commentError: { status: 403 } });
+  await denied.execute();
+  assert.deepEqual(denied.effects, []);
+  assert.match(denied.warnings[0], /cannot post the rebase request/);
+
+  for (const change of ['head', 'base', 'closed']) {
+    const f = fixture({
+      behind: true,
+      onGet: (state, count) => {
+        if (count !== 2) return;
+        if (change === 'head') state.prs[0].head.sha = 'new-head';
+        if (change === 'base') state.base = 'new-base';
+        if (change === 'closed') state.prs[0].state = 'closed';
+      },
+    });
+    await f.execute();
+    assert.deepEqual(f.effects, []);
+  }
+});
+
 test('refreshes other branches after a token merge even without a push event', async () => {
   const f = fixture();
   f.state.prs.push({ ...clone(f.state.prs[0]), number: 2 });

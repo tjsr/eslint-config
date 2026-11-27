@@ -6,6 +6,9 @@ const isLintDependency = (name) =>
   name === '@tjsr/eslint-config' ||
   name === 'eslint' ||
   name === 'typescript-eslint' ||
+  name === 'prettier' ||
+  name === 'prettier-plugin-sort-members' ||
+  name === '@trivago/prettier-plugin-sort-imports' ||
   name.startsWith('eslint-') ||
   name.startsWith('@eslint/') ||
   name.startsWith('@typescript-eslint/') ||
@@ -34,7 +37,7 @@ const lintOnly = (basePackage, headPackage, baseLock, headLock) => {
   return changed.size > 0 && [...changed].every(isLintDependency);
 };
 
-const run = async ({ github, context, core, scope, workflows }) => {
+const run = async ({ github, rebaseGithub = github, context, core, scope, workflows }) => {
   if (!['all', 'linter'].includes(scope) || !Array.isArray(workflows) || workflows.length === 0) {
     throw new Error('An explicit dependency scope and at least one CI workflow are required.');
   }
@@ -87,20 +90,73 @@ const run = async ({ github, context, core, scope, workflows }) => {
     ]);
     return lintOnly(...manifests);
   };
+  const isPermissionError = (error) => [401, 403, 404].includes(error.status);
+  let rebaseActor;
+  const resolveRebaseActor = async () => {
+    try {
+      const { data: user } = await rebaseGithub.rest.users.getAuthenticated();
+      if (user.type !== 'User' || !user.login) return null;
+      const { data: access } = await rebaseGithub.rest.repos.getCollaboratorPermissionLevel({
+        ...repo,
+        username: user.login,
+      });
+      return ['admin', 'maintain', 'write'].includes(access.permission) ? user.login : null;
+    } catch (error) {
+      if (!isPermissionError(error)) throw error;
+      return null;
+    }
+  };
   const rebase = async (pr, baseSha) => {
     const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
       ...repo,
       basehead: `${baseSha}...${pr.head.sha}`,
     });
     if (comparison.behind_by === 0) return false;
+
+    // Issue-comment write permission alone does not give a workflow bot push access.
+    rebaseActor ??= resolveRebaseActor();
+    const actor = await rebaseActor;
+    const manual = 'Ask a maintainer with push access to request the rebase.';
+    if (!actor) {
+      core.warning(`PR #${pr.number}: no verified user with push access for this token. ${manual}`);
+      return true;
+    }
+
     const marker = `<!-- dependabot-rebase:${baseSha}:${pr.head.sha} -->`;
     const comments = await list(github.rest.issues.listComments, { issue_number: pr.number });
-    if (!comments.some((comment) => comment.body?.includes(marker))) {
-      await github.rest.issues.createComment({
-        ...repo,
-        body: `@dependabot rebase\n\n${marker}`,
-        issue_number: pr.number,
-      });
+    let requestedByActor = false;
+    let deniedForActor = false;
+    for (const comment of comments) {
+      const body = comment.body?.trim() ?? '';
+      if (/^@dependabot[ \t]+(?:rebase|recreate)(?:[ \t]*\r?\n|[ \t]*$)/i.test(body)) {
+        requestedByActor =
+          comment.user?.login === actor && body.endsWith(`:${pr.head.sha} -->`);
+      } else if (
+        requestedByActor &&
+        comment.user?.login === 'dependabot[bot]' &&
+        /only users with push access can use that command/i.test(body)
+      ) {
+        deniedForActor = true;
+      }
+    }
+    if (deniedForActor) {
+      core.warning(`PR #${pr.number}: Dependabot denied this actor's rebase on the current head. ${manual}`);
+      return true;
+    }
+    if (!comments.some((comment) => comment.user?.login === actor && comment.body?.includes(marker))) {
+      const current = await getPr(pr.number);
+      if (!owned(current) || current.head.sha !== pr.head.sha || (await mainSha()) !== baseSha) return true;
+      try {
+        await rebaseGithub.rest.issues.createComment({
+          ...repo,
+          body: `@dependabot rebase\n\n${marker}`,
+          issue_number: pr.number,
+        });
+      } catch (error) {
+        if (!isPermissionError(error)) throw error;
+        core.warning(`PR #${pr.number}: token cannot post the rebase request (HTTP ${error.status}). ${manual}`);
+        return true;
+      }
     }
     core.info(`PR #${pr.number}: waiting for Dependabot to rebase onto ${baseSha}.`);
     return true;
